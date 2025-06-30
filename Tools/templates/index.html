@@ -1,50 +1,103 @@
 {% extends "base.html" %}
-{% block title %}Chatbot{% endblock %}
-
+{% block title %}AI Chatbot{% endblock %}
 {% block content %}
-<div id="chat" class="container">
-  <h1>Chat with AI Assistant</h1>
-  <div id="messages"></div>
-  <input id="input" placeholder="Type a message…" />
-  <button id="send">Send</button>
+<div id="chat-container">
+    <div id="messages">
+        </div>
+    <div id="input-area">
+        <input id="input" autocomplete="off" placeholder="Ask me anything..." /> 
+        <button id="send" aria-label="Send">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+            </svg>
+        </button>
+    </div>
 </div>
 
 <script>
-  const messagesDiv = document.getElementById("messages");
-  const inputEl = document.getElementById("input");
-  const sendBtn = document.getElementById("send");
+document.addEventListener("DOMContentLoaded", function() {
+    const messagesDiv = document.getElementById("messages");
+    const inputEl = document.getElementById("input");
+    const sendBtn = document.getElementById("send");
+    
+   
+    // Function to add a message to the chat window
+    function addMessage(text, type, isTyping = false) {
+        const typingIndicator = document.querySelector('.typing-indicator');
+        if (typingIndicator) typingIndicator.remove();
 
-  function addMessage(text, cls) {
-    const el = document.createElement("div");
-    el.className = `message ${cls}`;
-    el.textContent = text;
-    messagesDiv.appendChild(el);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  }
+        const messageWrapper = document.createElement("div");
+        messageWrapper.className = `message ${type}`;
+        if (isTyping) messageWrapper.classList.add('typing-indicator');
 
-  async function send() {
-    const msg = inputEl.value.trim();
-    if (!msg) return;
-    addMessage("You: " + msg, "user");
-    inputEl.value = "";
+        const messageContent = document.createElement("div");
+        messageContent.className = "content";
 
-    const res = await fetch("/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg })
+        if (type === 'bot' && !isTyping) {
+            messageContent.innerHTML = marked.parse(text);
+            messageContent.querySelectorAll('pre code').forEach(hljs.highlightElement);
+        } else {
+            messageContent.textContent = text;
+        }
+
+        messageWrapper.appendChild(messageContent);
+        messagesDiv.appendChild(messageWrapper);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // Main function to handle sending a message
+    async function sendMessage() {
+        const msg = inputEl.value.trim();
+        if (!msg) return;
+
+        addMessage(msg, "user");
+        inputEl.value = "";
+        
+        // Disable form and show typing indicator
+        inputEl.disabled = true;
+        sendBtn.disabled = true;
+        addMessage("Bot is typing...", "bot", true);
+
+        try {
+            const res = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: msg })
+            });
+
+            const data = await res.json();
+            
+            let replyText = "";
+            if (data.reply) {
+                replyText = data.reply;
+            } else {
+                replyText = "Error: " + (data.error || "An unknown error occurred.");
+            }
+
+            addMessage(replyText, "bot");
+
+        } catch (error) {
+            console.error('Error:', error);
+            addMessage("Sorry, I'm having trouble connecting. Please try again later.", "bot");
+        } finally {
+            // Re-enable form
+            inputEl.disabled = false;
+            sendBtn.disabled = false;
+            inputEl.focus();
+        }
+    }
+
+    sendBtn.onclick = sendMessage;
+    inputEl.addEventListener("keypress", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
     });
 
-    const data = await res.json();
-    if (data.reply) {
-      addMessage("Bot: " + data.reply, "bot");
-    } else {
-      addMessage("Error: " + (data.error || "unknown"), "bot");
-    }
-  }
-
-  sendBtn.onclick = send;
-  inputEl.addEventListener("keypress", e => {
-    if (e.key === "Enter") send();
-  });
+    // Add initial welcome message
+    addMessage("Hello! I'm your AI assistant. How can I help you today?", "bot");
+    inputEl.focus();
+});
 </script>
 {% endblock %}

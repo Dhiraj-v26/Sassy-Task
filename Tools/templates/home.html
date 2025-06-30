@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Welcome | AI Tools Suite{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>Welcome to the AI Tools Suite</h1>
+  <p style="text-align: center;">Choose a tool below to get started:</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>💬 Chatbot</h2>
+      <p>Chat with an AI assistant powered by OpenAI. Get help, suggestions, or answers instantly.</p>
+      <a href="/chat" class="btn">Open Chatbot</a>
+    </div>
+
+    <div class="card">
+      <h2>🧮 Calculator</h2>
+      <p>Perform basic arithmetic operations quickly using our simple calculator interface.</p>
+      <a href="/calc" class="btn">Open Calculator</a>
+    </div>
+
+    <div class="card">
+      <h2>🖼️ Background Remover</h2>
+      <p>Upload an image and remove its background automatically with one click.</p>
+      <a href="/rmbg" class="btn">Open Remover</a>
+    </div>
+
+    <div class="card">
+      <h2>🧮 Image Generation</h2>
+      <p>provide a prompt and get an Image.</p>
+      <a href="/imgen" class="btn">Open Imgen</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

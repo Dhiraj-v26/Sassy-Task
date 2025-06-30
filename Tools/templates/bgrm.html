@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Background Remover{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>Remove Background from Image</h1>
+  <input type="file" id="imageInput" accept="image/*">
+  <button onclick="uploadImage()">Upload</button>
+  <div id="result"></div>
+</div>
+
+<script>
+function uploadImage() {
+  const imageInput = document.getElementById('imageInput');
+  const file = imageInput.files[0];
+
+  if (!file) {
+    document.getElementById('result').innerText = 'Please select an image file.';
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  fetch('/rmbg', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.blob())
+  .then(blob => {
+    const objectURL = URL.createObjectURL(blob);
+    const imgElement = document.createElement('img');
+    imgElement.src = objectURL;
+    imgElement.alt = 'Processed Image';
+    imgElement.style.width = '300px';
+
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = '';
+    resultDiv.appendChild(imgElement);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    document.getElementById('result').innerText = 'An error occurred during upload.';
+  });
+}
+</script>
+{% endblock %}

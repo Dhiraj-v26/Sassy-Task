@@ -1,0 +1,114 @@
+{% comment %} <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flask Chatbot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+     <nav>
+    <a href="/">Chatbot</a> |
+    <a href="/calc">Calculator</a> |
+    <a href="/rmbg">Background Remover</a>
+  </nav>
+  <div id="chat">
+    <div id="messages"></div>
+    <input id="input" placeholder="Type a message…"  />
+    <br>
+    <button id="send">Send</button>
+  </div>
+
+  <script>
+    const messagesDiv = document.getElementById("messages");
+    const inputEl = document.getElementById("input");
+    const sendBtn = document.getElementById("send");
+
+    function addMessage(text, cls) {
+      const el = document.createElement("div");
+      el.className = `message ${cls}`;
+      el.textContent = text;
+      messagesDiv.appendChild(el);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function send() {
+      const msg = inputEl.value.trim();
+      if (!msg) return;
+      addMessage("You: " + msg, "user");
+      inputEl.value = "";
+
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ message: msg })
+      });
+      const data = await res.json();
+      if (data.reply) {
+        addMessage("Bot: " + data.reply, "bot");
+      } else {
+        addMessage("Error: " + (data.error||"unknown"), "bot");
+      }
+    }
+
+    sendBtn.onclick = send;
+    inputEl.addEventListener("keypress", e => {
+      if (e.key === "Enter") send();
+    });
+  </script>
+</body>
+</html> {% endcomment %}
+
+
+
+{% extends "base.html" %}
+
+{% block title %}Chatbot{% endblock %}
+
+{% block content %}
+<div id="chat">
+  <div id="messages"></div>
+  <input id="input" placeholder="Type a message…" />
+  <br>
+  <button id="send">Send</button>
+</div>
+
+<script>
+  const messagesDiv = document.getElementById("messages");
+  const inputEl = document.getElementById("input");
+  const sendBtn = document.getElementById("send");
+
+  function addMessage(text, cls) {
+    const el = document.createElement("div");
+    el.className = `message ${cls}`;
+    el.textContent = text;
+    messagesDiv.appendChild(el);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  async function send() {
+    const msg = inputEl.value.trim();
+    if (!msg) return;
+    addMessage("You: " + msg, "user");
+    inputEl.value = "";
+
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg })
+    });
+
+    const data = await res.json();
+    if (data.reply) {
+      addMessage("Bot: " + data.reply, "bot");
+    } else {
+      addMessage("Error: " + (data.error || "unknown"), "bot");
+    }
+  }
+
+  sendBtn.onclick = send;
+  inputEl.addEventListener("keypress", e => {
+    if (e.key === "Enter") send();
+  });
+</script>
+{% endblock %}

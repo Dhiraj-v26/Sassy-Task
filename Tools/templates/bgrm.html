@@ -1,47 +1,78 @@
 {% extends "base.html" %}
 {% block title %}Background Remover{% endblock %}
-
 {% block content %}
-<div class="container">
-  <h1>Remove Background from Image</h1>
-  <input type="file" id="imageInput" accept="image/*">
-  <button onclick="uploadImage()">Upload</button>
-  <div id="result"></div>
+<div class="container tool-container">
+    <h1>🖼️ AI Background Remover</h1>
+    <p class="description">Upload an image and the AI will automatically remove the background.</p>
+
+    <input type="file" id="imageInput" accept="image/*">
+    
+    <label for="imageInput" class="file-upload-area" id="upload-label">
+        <div class="icon">⬆️</div>
+        <p><strong>Click to browse</strong> or drag and drop an image here</p>
+    </label>
+
+    <div class="result-area" id="result-area">
+        </div>
 </div>
 
 <script>
+const imageInput = document.getElementById('imageInput');
+const uploadLabel = document.getElementById('upload-label');
+const resultArea = document.getElementById('result-area');
+
+// Show image preview when a file is selected
+imageInput.addEventListener('change', function() {
+    const file = this.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            resultArea.innerHTML = `
+                <img id="image-preview" src="${e.target.result}" alt="Image Preview">
+                <button id="upload-btn" onclick="uploadImage()">Remove Background</button>
+            `;
+        }
+        reader.readAsDataURL(file);
+        uploadLabel.style.display = 'none'; // Hide the upload box
+    }
+});
+
 function uploadImage() {
-  const imageInput = document.getElementById('imageInput');
-  const file = imageInput.files[0];
+    const file = imageInput.files[0];
+    if (!file) {
+        resultArea.innerText = 'Please select an image file first.';
+        return;
+    }
 
-  if (!file) {
-    document.getElementById('result').innerText = 'Please select an image file.';
-    return;
-  }
+    resultArea.innerHTML = `
+        <div class="loading-spinner"></div>
+        <p style="text-align: center;">Removing background, please wait...</p>
+    `;
 
-  const formData = new FormData();
-  formData.append('image', file);
+    const formData = new FormData();
+    formData.append('image', file);
 
-  fetch('/rmbg', {
-    method: 'POST',
-    body: formData
-  })
-  .then(response => response.blob())
-  .then(blob => {
-    const objectURL = URL.createObjectURL(blob);
-    const imgElement = document.createElement('img');
-    imgElement.src = objectURL;
-    imgElement.alt = 'Processed Image';
-    imgElement.style.width = '300px';
-
-    const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = '';
-    resultDiv.appendChild(imgElement);
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    document.getElementById('result').innerText = 'An error occurred during upload.';
-  });
+    fetch('/rmbg', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Image processing failed on the server.');
+        return response.blob();
+    })
+    .then(blob => {
+        const objectURL = URL.createObjectURL(blob);
+        resultArea.innerHTML = `
+            <h3>Result:</h3>
+            <img src="${objectURL}" alt="Processed Image" style="max-width: 100%; border-radius: 8px;">
+            <br>
+            <a href="${objectURL}" download="background-removed.png" class="btn" style="margin-top: 15px; display: inline-block;">Download Image</a>
+        `;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        resultArea.innerHTML = `<p style="color: #e53e3e; text-align: center;">${error.message}</p>`;
+    });
 }
 </script>
 {% endblock %}

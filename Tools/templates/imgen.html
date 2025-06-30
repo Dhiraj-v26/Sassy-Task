@@ -1,53 +1,62 @@
 {% extends "base.html" %}
 {% block title %}Image Generator{% endblock %}
-
 {% block content %}
-<div class="container">
-  <h1>🧠 Generate Image with AI</h1>
-  <p>Enter a prompt to generate an image using DALL·E:</p>
+<div class="container tool-container">
+    <h1>🎨 AI Image Generator</h1>
+    <p class="description">Describe the image you want to create using DALL·E. The more detail, the better the result!</p>
 
-  <input type="text" id="promptInput" placeholder="Describe your image..." style="width: 80%; padding: 10px;">
-  <button onclick="generateImage()">Generate</button>
-
-  <div id="result" style="margin-top: 20px;"></div>
+    <form id="imgen-form" class="tool-form">
+        <textarea id="prompt-input" placeholder="e.g., A photo of a sleek, futuristic car driving on a highway at sunset, cinematic lighting, hyperrealistic"></textarea>
+        <button type="submit">Generate Image</button>
+    </form>
+    
+    <div class="result-area" id="result-area">
+        </div>
 </div>
 
 <script>
-function generateImage() {
-  const prompt = document.getElementById('promptInput').value.trim();
-  const resultDiv = document.getElementById('result');
-
-  if (!prompt) {
-    resultDiv.innerHTML = "<p style='color:red;'>Please enter a prompt.</p>";
-    return;
-  }
-
-  resultDiv.innerHTML = "<p>Generating image, please wait...</p>";
-
-  fetch("/imgen", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: prompt })
-  })
-  .then(response => {
-    if (!response.ok) {
-      return response.json().then(data => { throw new Error(data.error || "Unknown error") });
+document.getElementById('imgen-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const promptInput = document.getElementById('prompt-input');
+    const resultArea = document.getElementById('result-area');
+    const prompt = promptInput.value.trim();
+    
+    if (!prompt) {
+        resultArea.innerHTML = "<p style='color:#e53e3e; text-align:center;'>Please enter a prompt to generate an image.</p>";
+        return;
     }
-    return response.json();
-  })
-  .then(data => {
-    console.log(data)
-    // const objectURL = URL.createObjectURL(blob);
-    resultDiv.innerHTML = "";
-    const img = document.createElement("img");
-    img.src = data.image;
-    img.style.maxWidth = "100%";
-    img.alt = "Generated Image";
-    resultDiv.appendChild(img);
-  })
-  .catch(err => {
-    resultDiv.innerHTML = "<p style='color:red;'>Error: " + err.message + "</p>";
-  });
-}
+
+    // Show loading spinner
+    resultArea.innerHTML = `
+        <div class="loading-spinner"></div>
+        <p style="text-align: center;">Generating your image... This can take up to a minute.</p>
+    `;
+
+    fetch('/imgen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: prompt })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.error || 'Unknown server error') });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.image) {
+            resultArea.innerHTML = `
+                <h3>Your Generated Image:</h3>
+                <img src="${data.image}" alt="Generated Image" style="max-width: 100%; border-radius: 8px;">
+            `;
+        } else {
+            throw new Error(data.error || 'Failed to get image data.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        resultArea.innerHTML = `<p style='color: #e53e3e; text-align: center;'><strong>Error:</strong> ${error.message}</p>`;
+    });
+});
 </script>
 {% endblock %}
